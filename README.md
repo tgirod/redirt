@@ -1,4 +1,4 @@
-redirt : tidal + renoise = <3
+# tidal + renoise = <3
 
 The idea here is to control renoise instead of superdirt as a sound synthesis engine.
 

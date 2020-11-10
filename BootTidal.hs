@@ -83,7 +83,7 @@ let renoise = Target {
     value = pF "value"
     val = value
     -- redefining octave. use it with operator |+ instead of #
-    octave = \p -> note (p*12)
+    octave = \p -> note (p |* 12)
     oscmap = [(renoise, formats)]
 :}
 

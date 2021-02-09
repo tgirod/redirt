@@ -5,6 +5,10 @@ import Sound.Tidal.Context
 
 import System.IO (hSetEncoding, stdout, utf8)
 
+import qualified Control.Concurrent.MVar as MV
+import qualified Sound.Tidal.Tempo as Tempo
+import qualified Sound.OSC.FD as O
+
 hSetEncoding stdout utf8
 
 :{
@@ -20,7 +24,9 @@ let renoise = Target {
         oPort=8000,
         oLatency=0.2,
         oSchedule=Live,
-        oWindow=Nothing
+        oWindow=Nothing,
+        oBusPort=Nothing,
+        oHandshake=False
         }
     formats = [
         -- send note_on event
@@ -65,7 +71,7 @@ let renoise = Target {
     -- triggers note_off event
     noteOff = pI "noteOff"
     -- gain controls velocity, remapping from [0 1] to [0 127]
-    gain = pF "velocity" . linlin 0 1 0 127
+    -- gain = pF "velocity" . linlin 0 1 0 127
     -- instument macros
     m1 = pF "m1"
     m2 = pF "m2"
@@ -89,6 +95,9 @@ let renoise = Target {
 
 tidal <- startStream defaultConfig oscmap
 
+-- total latency = oLatency + cFrameTimespan
+-- tidal <- startTidal (superdirtTarget {oLatency = 0.1, oAddress = "127.0.0.1", oPort = 57120}) (defaultConfig {cFrameTimespan = 1/20})
+
 :{
 let only = (hush >>)
     p = streamReplace tidal
@@ -108,6 +117,11 @@ let only = (hush >>)
     all = streamAll tidal
     resetCycles = streamResetCycles tidal
     setcps = asap . cps
+    getcps = do tempo <- MV.readMVar $ sTempoMV tidal
+                return $ Tempo.cps tempo
+    getnow = do tempo <- MV.readMVar $ sTempoMV tidal
+                now <- O.time
+                return $ fromRational $ Tempo.timeToCycles tempo now
     xfade i = transition tidal True (Sound.Tidal.Transition.xfadeIn 4) i
     xfadeIn i t = transition tidal True (Sound.Tidal.Transition.xfadeIn t) i
     histpan i t = transition tidal True (Sound.Tidal.Transition.histpan t) i
